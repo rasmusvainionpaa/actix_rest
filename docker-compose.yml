@@ -1,0 +1,28 @@
+version: "3"
+services:
+  api:
+      build: .
+      env_file:
+        - .env
+      environment:
+        DB_HOST: db
+      depends_on:
+        - db
+      ports:
+        - 8080:8000
+  db:
+    image: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DB}
+    ports:
+      - ${DB_PORT}:5432
+    volumes:
+      - postgresql:/var/lib/postgresql/api
+      - postgresql_data:/var/lib/postgresql/api/data
+volumes:
+  postgresql: {}
+  postgresql_data: {}
