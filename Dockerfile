@@ -1,23 +1,18 @@
-# Rust as the base image
-FROM rust:1.49
+ARG BASE_IMAGE=ekidd/rust-musl-builder:latest
 
-# 1. Create a new empty shell project
-RUN USER=root cargo new --bin holodeck
-WORKDIR /holodeck
+# Our first FROM statement declares the build environment.
+FROM ${BASE_IMAGE} AS builder
 
-# 2. Copy our manifests
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./Cargo.toml ./Cargo.toml
+# Add our source code.
+ADD --chown=rust:rust . ./
 
-# 3. Build only the dependencies to cache them
+# Build our application.
 RUN cargo build --release
-RUN rm src/*.rs
 
-# 4. Now that the dependency is built, copy your source code
-COPY ./src ./src
-
-# 5. Build for release.
-RUN rm ./target/release/deps/holodeck*
-RUN cargo install --path .
-
-CMD ["holodeck"]
+# Now, we need to build our _real_ Docker container, copying in `using-diesel`.
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+COPY --from=builder \
+    /home/rust/src/target/x86_64-unknown-linux-musl/release/actix_rest \
+    /usr/local/bin/
+CMD /usr/local/bin/actix_rest
